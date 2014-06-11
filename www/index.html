@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one
+    or more contributor license agreements.  See the NOTICE file
+    distributed with this work for additional information
+    regarding copyright ownership.  The ASF licenses this file
+    to you under the Apache License, Version 2.0 (the
+    "License"); you may not use this file except in compliance
+    with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+     KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+-->
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="format-detection" content="telephone=no" />
+        <!-- WARNING: for iOS 7, remove the width=device-width and height=device-height attributes. See https://issues.apache.org/jira/browse/CB-4323 -->
+        <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />
+        <link rel="stylesheet" type="text/css" href="./css/index.css" />
+        <meta name="msapplication-tap-highlight" content="no" />
+        <title>Tap To Clean</title>
+    </head>
+    <body>
+		<img src="./img/background.png" id="bg" alt="">
+        <div class="app">
+            <!--h1>Apache Cordova</h1-->
+                <!--p class="event listening">Connecting to Device</p-->
+                <!--p class="event received">Device is Ready</p-->
+				<button type="button" class="indexbutton" id="btn1" onclick="gameon()">Play</button><br/>
+				<button type="button" class="indexbutton" id="btn2">About</button><br/>
+				<button type="button" class="indexbutton" id="btn3">Rate App!</button>
+        </div>
+        <script type="text/javascript" src="cordova.js"></script>
+        <script type="text/javascript" src="js/index.js"></script>
+        <script type="text/javascript">
+			document.addEventListener("deviceready", onDeviceReady, false);
+			function onDeviceReady() {
+				//alert("imready");
+				var appstorelink = "";
+				var mPlatform = device.platform
+				if (mPlatform == "Android") {
+					appstorelink = "market://details?id=com.duchuyctlk.phonegap.taptoclean";
+				} else if (mPlatform == "iOS" || mPlatform == "iPad" || mPlatform == "iPhone") {
+				}
+				/*alert('Device Model: '    + device.model    + '<br />' +
+                            'Device Cordova: '  + device.cordova  + '<br />' +
+                            'Device Platform: ' + device.platform + '<br />' +
+                            'Device UUID: '     + device.uuid     + '<br />' +
+                            'Device Version: '  + device.version  + '<br />'); 
+							*/
+				document.getElementById("btn3").setAttribute('onclick',"window.open('" + appstorelink + "')");
+			}
+			
+			function prepareDatabase(error) {
+				return openDatabase('taptoclean', '', 'Game DB', 100*1024, function (db) {
+					//alert("DB Created");
+					db.transaction(function (t) {
+						t.executeSql("CREATE TABLE levels (id, boardsize, initmove, isunlock, besttime);");
+						var _id = 1;
+						for (var bs = 5; bs <= 8; bs ++) {
+							var _maxim = Math.floor(bs * bs / 2);
+							for (var im = bs - 1; im <= _maxim; im ++) {
+								if (_id > 1) {
+									var sqlstr = "INSERT INTO levels VALUES(" + _id + "," + bs + "," + im + ", 0, 0);";
+									t.executeSql(sqlstr);
+								} else {
+									t.executeSql("INSERT INTO levels VALUES(1, 5, 4, 1, 0);");
+								}
+								_id ++;
+							}
+						}
+					}, errorMsg);
+				});
+			}
+
+			function errorMsg(e) {
+				alert(e.message);
+			}
+			
+			prepareDatabase(errorMsg);
+			
+			function gameon() {
+				//localStorage.setItem('level', 1);
+				//localStorage.setItem('boardsize', 4);
+				//localStorage.setItem('initmove', 3);
+				window.location = 'levelslisting.html'; //game.html'; //?level=1&boardsize=5&initmove=4';
+			}
+            //app.initialize();
+			//alert('Hello there!!!');
+			
+			var ratio = window.devicePixelRatio;
+			
+			var buttonBottomMargin = 10 * ratio;
+			var buttonHorizontalMargin = 16 * ratio;
+			
+			var sHeight=window.innerHeight; //screen.availHeight;
+			var sWidth=window.innerWidth; //screen.availWidth;
+			
+			var portrait = 0;
+			switch(window.orientation) 
+			{  
+				case 0:
+				case 180:
+					portrait = 1;
+					break; 
+				case -90:
+				case 90:
+					portrait = 0;
+					break;
+				default:
+					portrait = -1;
+					break; 
+			}
+			//if (window.matchMedia("(orientation: portrait)").matches) {
+			if (portrait == 1 && sHeight < sWidth) {
+				var tmp = sHeight;
+				sHeight = sWidth;
+				sWidth = tmp;			
+			}
+			
+			//alert("sHeight = " + sHeight);
+			//alert("sWidth = " + sWidth);
+			
+			var buttonHeight = 60 * ratio; // document.getElementById("btn1").clientHeight;
+			//alert('Button height = ' + buttonHeight);
+			var buttonsHeight = buttonHeight*3 + buttonBottomMargin*2;
+			//alert('buttonsHeight = ' + buttonsHeight);
+			var inner1MarginTop=Math.round((sHeight-buttonsHeight)/2);
+			//alert('inner1MarginTop = ' + inner1MarginTop);
+			document.getElementById("btn1").style.marginTop = inner1MarginTop.toString() + "px";
+			
+			var bottomSpace = sHeight - buttonsHeight - inner1MarginTop;
+			//alert("bottomSpace = " + bottomSpace);
+			var realWidth = sWidth - 2 * buttonHorizontalMargin;
+			
+			for (var i=1; i<=3; i++) {
+				var id = "btn" + i;
+				document.getElementById(id).style.marginLeft = buttonHorizontalMargin.toString() + "px";
+				document.getElementById(id).style.marginRight = buttonHorizontalMargin.toString() + "px";
+				document.getElementById(id).style.width = realWidth.toString() + "px";
+				document.getElementById(id).style.height = buttonHeight.toString() + "px";
+				if (i < 3)
+					document.getElementById(id).style.marginBottom = buttonBottomMargin.toString() + "px";
+			}
+        </script>
+    </body>
+</html>

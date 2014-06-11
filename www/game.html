@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one
+    or more contributor license agreements.  See the NOTICE file
+    distributed with this work for additional information
+    regarding copyright ownership.  The ASF licenses this file
+    to you under the Apache License, Version 2.0 (the
+    "License"); you may not use this file except in compliance
+    with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+     KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+-->
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="format-detection" content="telephone=no" />
+        <!-- WARNING: for iOS 7, remove the width=device-width and height=device-height attributes. See https://issues.apache.org/jira/browse/CB-4323 -->
+        <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />
+        <link rel="stylesheet" type="text/css" href="./css/index.css" />
+		<link rel="stylesheet" type="text/css" href="./css/dialog_box.css">
+        <meta name="msapplication-tap-highlight" content="no" />
+        <title>Tap To Clean</title>
+    </head>
+    <body>
+		<img src="./img/background.png" id="bg" alt="">
+        <div class="app">		
+			<table id="gamestatus" border="0" style="width:100%;marginTop:16px;marginLeft:16px;paddingRight:16px;font-size:30px;font-family:'rockstone'">
+			<tr>
+				<td id="gamelevel" style="text-align:left">Level</td>
+				<td id="gametime" style="text-align:right">0:00</td>
+			</tr>
+			</table>
+			<div id="dialogmask" style="visibility: hidden; position: absolute; width: 100px; height: 100px; top: 0; left: 0; opacity: 0.5; background: #000">
+			</div>
+			<div id="dialog" style="visibility: hidden">
+				<div id="labelcomplete"></div>
+				<div id="labeltime"></div>
+				<div id="labelbesttime"></div>
+				<br>
+				<table border="0" style="width:100%">
+					<tr>
+						<td style="width:50%;text-align:center">
+							<button id="btnnext" class="indexbutton" onclick="nextLevel()">Next</button>
+						</td>
+						<td style="width:50%;text-align:center">
+							<button id="btnback" class="indexbutton" onclick="window.history.back()">Back</button>
+						</td>
+					</tr>
+				</table>
+			</div>
+            <!--h1>Apache Cordova</h1-->
+                <!--p class="event listening">Connecting to Device</p-->
+                <!--p class="event received">Device is Ready</p-->
+        </div>
+        <script type="text/javascript" src="cordova.js"></script>
+        <script type="text/javascript" src="js/index.js"></script>
+        <script type="text/javascript" src="js/dialog_box.js"></script>
+        <script type="text/javascript">
+            //app.initialize();
+			//alert('Hello there!!!');
+
+			var ratio = window.devicePixelRatio;
+			
+			var boardMargin = 16 * ratio;
+			
+			document.getElementById("gamestatus").style.marginTop = boardMargin.toString() + "px";
+			document.getElementById("gamestatus").style.marginLeft = boardMargin.toString() + "px";
+			document.getElementById("gamestatus").style.paddingRight = boardMargin.toString() + "px";
+			
+			var sHeight=window.innerHeight; //screen.availHeight;
+			var sWidth=window.innerWidth; //screen.availWidth;
+			
+			var portrait = 0;
+			switch(window.orientation) 
+			{  
+				case 0:
+				case 180:
+					portrait = 1;
+					break; 
+				case -90:
+				case 90:
+					portrait = 0;
+					break;
+				default:
+					portrait = -1;
+					break; 
+			}
+			//if (window.matchMedia("(orientation: portrait)").matches) {
+			if (portrait == 1 && sHeight < sWidth) {
+				var tmp = sHeight;
+				sHeight = sWidth;
+				sWidth = tmp;			
+			}
+			
+			/*
+			var qs = (function(a) {
+				if (a == "") return {};
+				var b = {};
+				for (var i = 0; i < a.length; ++i)
+				{
+					var p=a[i].split('=');
+					if (p.length != 2) continue;
+					b[p[0]] = decodeURIComponent(p[1].replace(/\+/g, " "));
+				}
+				return b;
+			})(window.location.search.substr(1).split('&'));
+			*/
+			
+			var level = localStorage.getItem('level'); //qs["level"];
+			var boardsize; // = localStorage.getItem('boardsize'); //qs["boardsize"];
+			var initmove; // = localStorage.getItem('initmove'); //qs["initmove"];
+			var besttime;
+			var colored, clicked;
+			
+			var db = openDatabase('taptoclean', '', 'Game DB', 100*1024);
+			db.transaction(function (tx) {
+				tx.executeSql("SELECT boardsize, initmove, isunlock, besttime FROM levels WHERE id = " + level, [], function (tx, results) {
+					boardsize = results.rows.item(0).boardsize;
+					initmove = results.rows.item(0).initmove;
+					besttime = results.rows.item(0).besttime;
+					createButtons();
+				});
+			});
+			
+			document.getElementById("gamelevel").innerHTML = "Level " + level;
+			
+			var count = 0;
+			var count_pause = 0;
+			var counter = setInterval(timer, 1000); //timer will tick every 1 second
+
+			function timer()
+			{
+				if (count < 0)
+				{
+					clearInterval(counter);
+					// TODO
+					return;
+				}
+				count = count + 1;
+				var minute = Math.floor(count / 60);
+				var sec = count % 60;
+				var _time = minute + ":";
+				if (sec < 10)
+					_time += "0";
+				_time += sec;
+				document.getElementById("gametime").innerHTML = _time;
+				//while (count_pause == 1)
+				//{
+				//}
+			}
+
+			function createButtons() {
+				var buttonSize = Math.floor((sWidth - 2 * boardMargin) / boardsize);
+				
+				//alert('buttonSize = ' + buttonSize);
+				var appDiv = document.getElementsByClassName("app")[0];
+				
+				for (var i=0; i<boardsize; i++) {
+					for (var j=0; j<boardsize; j++) {
+						var element = document.createElement("button");
+						element.setAttribute("id", "btn" + (i*boardsize + j));
+						element.style.width = buttonSize.toString() + "px";
+						element.style.height = buttonSize.toString() + "px";
+						element.style.backgroundColor = '#ffffff';
+						if (i == 0) {
+							element.style.marginTop = boardMargin.toString() + "px";
+						}
+
+						if (j == 0) {
+							element.style.marginLeft = boardMargin.toString() + "px";
+						}
+						
+						appDiv.appendChild(element);
+						element.setAttribute('onclick','btnOnClick(' + i + ',' + j + ')');
+					}
+					var br = document.createElement("br");
+					appDiv.appendChild(br);
+				}
+				
+				clicked = new Array(boardsize * boardsize);
+				colored = new Array(boardsize * boardsize);
+				
+				for (var i=0; i< boardsize * boardsize; i++) {
+					clicked[i] = 0;
+					colored[i] = 0;
+				}	
+				
+				//alert('boardsize = ' + boardsize);
+				
+				for (var i=0; i < initmove; i++) {
+					var x = getRandomInt(0, boardsize - 1);
+					var y = getRandomInt(0, boardsize - 1);
+					var pos = x * boardsize + y;
+					while (clicked[pos] == 1) {
+						pos = (pos + 1) % (boardsize * boardsize);
+						x = Math.floor(pos / boardsize);
+						y = pos % boardsize;
+					}
+					//alert('(x, y) = ' + x + ',' + y);
+					clicked[pos] = 1;
+					btnOnClick(x, y);
+				}
+			}
+			
+			function btnOnClick(i, j) {
+				//alert('i = ' + i);
+				var _id = i * boardsize + j;
+				changeColor(_id);
+				if (i > 0)
+					changeColor(_id - boardsize);
+				if (j > 0)
+					changeColor(_id - 1);
+				if (i < boardsize - 1)
+					changeColor(_id + boardsize * 1);
+				if (j < boardsize - 1)
+					changeColor(_id + 1);
+				
+				if (checkFinishState()) {
+					clearInterval(counter);
+					
+					//alert("besttime = " + besttime);
+					
+					var db = openDatabase('taptoclean', '', 'Game DB', 100*1024);
+					if (besttime == 0 || besttime > count) {
+						//alert("updating");
+						db.transaction(function (tx) {
+							tx.executeSql("UPDATE levels SET besttime = " + count + " WHERE id = " + level);
+						});
+					}
+					
+					var nextLevel = parseInt(level) + 1;
+					db.transaction(function (tx) {
+						tx.executeSql("UPDATE levels SET isunlock = 1 WHERE id = " + nextLevel);
+					});
+										
+					showDialog(count);
+				}
+			}
+			
+			function checkFinishState() {
+				for (var i = 0; i < boardsize * boardsize; i++) {
+					if (colored[i] == 1) {
+						return false;
+					}
+				}
+				return true;
+			}
+			
+			function nextLevel() {
+				/*
+				var maxInitMove = Math.floor(boardsize * boardsize / 2);
+				if (initmove >= maxInitMove) {
+					initmove = boardsize;
+					boardsize ++;
+				} else {
+					initmove ++;
+				}
+				*/
+				level ++;
+				localStorage.setItem('level', level);
+				//localStorage.setItem('boardsize', boardsize);
+				//localStorage.setItem('initmove', initmove);
+				window.location = 'game.html';
+				// window.location = "game.html?level=" + level + "&boardsize=" + boardsize + "&initmove=" + initmove;
+			}
+			
+			function changeColor(id) {
+				var btn = document.getElementById("btn" + id);
+				//alert(btn.style.backgroundColor );
+				//if (btn.style.backgroundColor == "rgb(255, 255, 255)") {
+				if (colored[id] == 0) {
+					//alert("white");
+					btn.style.backgroundColor = "rgb(0, 175, 0)";
+					colored[id] = 1;
+				} else {
+					//alert("green");
+					btn.style.backgroundColor = "rgb(255, 255, 255)";
+					colored[id] = 0;
+				}
+			}
+			
+			function focusin() { 
+				//count_pause = 0; 
+				counter = setInterval(timer, 1000);
+			}
+			function focusout() { 
+				//count_pause = 1; 
+				clearInterval(counter);
+			}
+			
+			window.onfocus = focusin;
+			window.onblur = focusout;
+			
+			function getRandomInt(min, max) {
+				return Math.floor(Math.random() * (max - min + 1)) + min;
+			}
+			
+			function showDialog(playingtime) {
+				var dialog, dialogmask;
+				var lblComplete, lblTime, lblBesttime;
+				var btnNext, btnBack;
+				var br = document.createElement("br");
+				
+				if (!document.getElementById('dialogmask')) {
+					dialogmask = document.createElement('div');
+					dialogmask.id = 'dialogmask';
+				} else {
+					dialogmask = document.getElementById('dialogmask');
+				}
+				dialogmask.style.visibility = "visible";
+				dialogmask.style.width = sWidth.toString() + "px";;
+				dialogmask.style.height = sHeight.toString() + "px";;
+				
+				if (!document.getElementById('dialog')) {
+					dialog = document.createElement('div');
+					dialog.id = 'dialog';
+					lblComplete = document.createElement('div');
+					lblComplete.id = 'labelcomplete';
+					lblTime = document.createElement('div');
+					lblTime.id = 'labeltime';
+					lblBesttime = document.createElement('div');
+					lblBesttime.id = 'labelbesttime';
+					btnNext = document.createElement('button');
+					btnNext.id = 'btnnext';
+					btnBack = document.createElement('button');
+					btnBack.id = 'btnback';
+					document.getElementsByClassName("app")[0].appendChild(dialog);
+					dialog.appendChild(lblComplete);
+					dialog.appendChild(br);
+					dialog.appendChild(lblTime);
+					dialog.appendChild(br);
+					dialog.appendChild(lblBesttime);
+					dialog.appendChild(br);
+					dialog.appendChild(btnNext);
+					dialog.appendChild(btnBack);
+					//alert("Created");
+				} else {
+					dialog = document.getElementById('dialog');
+					lblComplete = document.getElementById('labelcomplete');
+					lblTime = document.getElementById('labeltime');
+					lblBesttime = document.getElementById('labelbesttime');
+					btnNext = document.getElementById('btnnext');
+					btnBack = document.getElementById('btnback');
+					//alert("found");
+				}
+				dialog.style.visibility = "visible";
+				dialog.style.fontFamily = "rockstone";
+				dialog.style.border = "2px solid #30B030";
+				dialog.alpha = 0;
+				
+				var top = topPosition();				
+				var dialogheight = dialog.offsetHeight;
+				var topposition = top + (sHeight / 3) - (dialogheight / 2);
+				dialog.style.top = topposition + "px";
+				dialog.style.marginLeft = (10 * ratio) + "px";
+				dialog.style.marginRight = (10 * ratio) + "px";
+				dialog.style.width = (sWidth - 20 * ratio - 4) + "px";
+				
+				lblComplete.style.color = "#00A000";
+				lblTime.style.color = "#FA6400";
+				lblBesttime.style.color = "#FA6400";
+				
+				lblComplete.innerHTML = "Level " + level + " completed";
+				var minute = Math.floor(playingtime / 60);
+				var second = playingtime % 60;
+				if (second < 10)
+					second = "0" + second;
+				lblTime.innerHTML = "Used time: " + minute + ":" + second;
+				if (besttime == 0 || besttime > playingtime)
+					besttime = playingtime;
+				minute = Math.floor(besttime / 60);
+				second = besttime % 60;
+				if (second < 10)
+					second = "0" + second;
+				lblBesttime.innerHTML = "Best time: " + minute + ":" + second;
+				
+				lblComplete.style.fontSize = (38 * ratio) + "px";
+				lblTime.style.fontSize = (25 * ratio) + "px";
+				lblBesttime.style.fontSize = (25 * ratio) + "px";
+				
+				btnNext.setAttribute("class", "indexbutton");
+				btnBack.setAttribute("class", "indexbutton");
+				btnNext.style.width = (sWidth * 3 / 8 - 10 * ratio - 2) + "px";
+				btnBack.style.width = (sWidth * 3 / 8 - 10 * ratio - 2) + "px";
+				btnNext.innerHTML = "Next";
+				btnBack.innerHTML = "Back";
+			}
+        </script>
+    </body>
+</html>

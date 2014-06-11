@@ -1,0 +1,107 @@
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="format-detection" content="telephone=no" />
+        <!-- WARNING: for iOS 7, remove the width=device-width and height=device-height attributes. See https://issues.apache.org/jira/browse/CB-4323 -->
+        <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />
+        <link rel="stylesheet" type="text/css" href="./css/index.css" />
+		<link rel="stylesheet" type="text/css" href="./css/dialog_box.css">
+        <meta name="msapplication-tap-highlight" content="no" />
+        <title>Tap To Clean</title>
+    </head>
+    <body>
+		<table id="lstLevels" border="0" cellspacing="0" style="width:100%;padding-right:16px;font-family:'rockstone'; font-size:28px">
+			<!--tr class="lstlevelstr" style="height:100px;">
+				<td style="width:100px;">
+					<img src="./img/done.png" alt="">
+				</td>
+				<td style="padding-left: 16px">
+					<div style="color:#00A000">Level 1</div>
+					<div style="color:#FA6400; font-size:15px">Best time: 0:03</div>
+				</td>
+			</tr-->
+		</table>
+        <script type="text/javascript" src="cordova.js"></script>
+        <script type="text/javascript" src="js/index.js"></script>
+		<script type="text/javascript">
+			var db = openDatabase('taptoclean', '', 'Game DB', 100*1024);
+			db.transaction(function (tx) {
+				tx.executeSql("SELECT id, isunlock, besttime FROM levels", [], function (tx, results) {
+					var trunlock = "tr1";
+					
+					for (var i=0; i < results.rows.length; i ++) {
+						var level = results.rows.item(i).id;
+						var isunlock = results.rows.item(i).isunlock;
+						var besttime = results.rows.item(i).besttime;
+						var minute = Math.floor(besttime / 60);
+						var second = besttime % 60;
+						if (second < 10)
+							second = "0" + second;
+
+						var lstLevels = document.getElementById("lstLevels");
+				
+						var tr = document.createElement("tr");
+						tr.setAttribute("class", "lstlevelstr");
+						tr.setAttribute("id", "tr" + level);
+						tr.style.height = "100px";
+						tr.style.paddingTop = "10px";
+						
+						var tdLeft = document.createElement("td");
+						tdLeft.style.width = "100px";
+						tdLeft.style.paddingLeft = "10px";
+						
+						var img = document.createElement("img");
+						img.setAttribute("alt", "");
+						if (isunlock == 0) {
+							img.setAttribute("src", "./img/locked.png");
+						}
+						else {
+							tr.setAttribute('onclick', 'play(' + level + ')');
+							if (besttime == 0) {
+								if (level > 1)
+									trunlock = "tr" + (level - 1);
+								img.setAttribute("src", "./img/unlocked.png");
+							} else {
+								img.setAttribute("src", "./img/done.png");
+							}
+						}
+						
+						var tdRight = document.createElement("td");
+						tdRight.style.paddingLeft = "16px";
+						
+						var divLevel = document.createElement("div");
+						divLevel.style.color = "#00A000";
+						divLevel.innerHTML = "Level " + level;
+						
+						var divTime = document.createElement("div");
+						divTime.style.fontSize = "15px";
+						if (isunlock == 0) {
+							divTime.style.color = "#FA6400";
+							divTime.innerHTML = "Locked";
+						} else {
+							divTime.style.color = "#0064FA";
+							if (besttime == 0) {
+								divTime.innerHTML = "Unlocked";
+							} else {
+								divTime.innerHTML = "Best time: " + minute + ":" + second;
+							}
+						}
+						
+						tdLeft.appendChild(img);
+						tdRight.appendChild(divLevel);
+						tdRight.appendChild(divTime);
+						tr.appendChild(tdLeft);
+						tr.appendChild(tdRight);
+						lstLevels.appendChild(tr);
+					}
+					document.getElementById(trunlock).scrollIntoView();
+				});
+			});
+			
+			function play(level) {
+				localStorage.setItem('level', level);
+				window.location = 'game.html';
+			}
+		</script>
+	</body>
+</html>
