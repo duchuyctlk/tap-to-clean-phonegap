@@ -19,4 +19,6 @@
 	<feature name="WebDatabase">
         <param name="wp-package" value="WebDatabase" />
     </feature>
+	<gap:plugin name="org.apache.cordova.device" />
+	<gap:plugin name="org.smile.websqldatabase.wpdb" />
 </widget>

@@ -1,0 +1,12 @@
+{
+    "version": "0.0.1",
+    "name": "org.smile.websqldatabase.wpdb",
+    "cordova_name": "WebSqlDatabase",
+    "description": "WebSqlDatabase implementation for Windows Phone",
+    "license": "Apache 2.0",
+    "keywords": [
+        "cordova",
+        "websqldatabase"
+    ],
+    "engines": []
+}
