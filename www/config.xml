@@ -13,7 +13,6 @@
 	<preference name="Orientation" value="portrait" />
     
 	<gap:plugin name="org.apache.cordova.device" />
-	<gap:plugin name="org.smile.websqldatabase.wpdb" />
 	
     <access origin="*" />
 	
