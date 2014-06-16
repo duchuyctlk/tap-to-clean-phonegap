@@ -39,6 +39,7 @@
         </div>
         <script type="text/javascript" src="cordova.js"></script>
         <script type="text/javascript" src="js/index.js"></script>
+        <script type="text/javascript" src="js/SQLitePlugin.js"></script>
         <script type="text/javascript">
 			document.addEventListener("deviceready", onDeviceReady, false);
 			function onDeviceReady() {
@@ -65,9 +66,18 @@
                             'Device Version: '  + device.version  + '<br />'); 
 							*/
 				document.getElementById("btn3").setAttribute('onclick',"window.open('" + appstorelink + "')");
+				
+				if (!window.openDatabase) {
+					if (!window.plugins.sqlitePlugin) {
+						console.log("try load plugin...");
+						window.plugins.sqlitePlugin = cordova.require("ch.zhaw.sqlite.SqlitePlugin");
+					}
+					prepareDatabase(errorMsg);
+				}
 			}
 			
 			function prepareDatabase(error) {
+				alert("prepareDatabase");
 				return openDatabase('taptoclean', '', 'Game DB', 100*1024, function (db) {
 					//alert("DB Created");
 					db.transaction(function (t) {
@@ -92,8 +102,6 @@
 			function errorMsg(e) {
 				alert(e.message);
 			}
-			
-			prepareDatabase(errorMsg);
 			
 			function gameon() {
 				//localStorage.setItem('level', 1);
